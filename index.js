@@ -37,90 +37,71 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const productCollection = client.db('productDB').collection('product')
-    const cartCollection = client.db('productDB').collection('cartproduct')
+    
+    const roomCollection = client.db('Pearl_Ashore').collection('roomdata')
+    const bookingCollection = client.db('Pearl_Ashore').collection('bookingdata')
 
 
-
-    //post or add data to mdb
-    app.post('/product', async (req, res) => {
-      const newProduct = req.body;
-      console.log(newProduct);
-      const result = await productCollection.insertOne(newProduct);
-      res.send(result);
-    })
-
-
-    //get those data from   mdb
-    app.get('/product', async (req, res) => {
-      const cursor = productCollection.find();
+    //get rooms data from   mdb
+    app.get('/rooms', async (req, res) => {
+      const cursor = roomCollection.find();
       const result = await cursor.toArray();
       res.send(result);
 
     })
-
-
-    // Get All product by name
-    app.get('/product/:name', async (req, res) => {
-      const name = req.params.name;
-      const query = { name: { $regex: new RegExp(name, 'i') } }// Query by the product's name
-      const results = await productCollection.find(query).toArray();
-      res.send(results);
+   //get rooms data by id from   mdb
+    app.get('/rooms/:id', async (req, res) => {
+      const roomId = req.params.id;
+      try {
+        const room = await roomCollection.findOne({ _id: new ObjectId(roomId) });
+        if (!room) {
+          // If room is not found, return a 404 status
+          return res.status(404).json({ error: 'Room not found' });
+        }
+        res.json(room);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
     });
 
+    // booking data add to server side
 
-
-    // Get All product id and update
-    app.get('/product/id/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }// Query by the product's name
-      const result = await productCollection.findOne(query);
+    app.post('/bookings' ,async(req,res) =>{
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollection.insertOne(booking)
       res.send(result);
-    });
+    })
 
-// Update a product by ID
-app.put('/product/id/:id', async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: new ObjectId(id) }; // Query by the product's ID
-  const options = { upsert: true };
-  
-  // Construct an update object with $set
-  const updateObject = {
-    $set: {
-      name: req.body.name,
-      type: req.body.type,
-      price: req.body.price,
-      description: req.body.description,
-      rating: req.body.rating,
-      photo: req.body.photo,
-    }
-  };
+    //get specific data by 
 
-  const result = await productCollection.updateOne(filter, updateObject, options);
-  res.send(result);
-  console.log(result);
-});
+    app.get('/bookings',async(req,res)=>{
+      console.log(req.query);
 
+      let query = {};
 
-// add add-to-cart data
+      if (req.query?.email) {
+        query = { email: req.query.email };
+      }
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    })
 
-app.post('/cartproduct/add-to-cart', async (req, res) => {
-  const cartproduct = req.body;
-  console.log(cartproduct);
-  const result = await cartCollection.insertOne(cartproduct);
-  res.send(result);
-  console.log('hitting');
-})
+  // delete specific data
 
- //get those cart data from   mdb
- app.get('/cartproduct/add-to-cart', async (req, res) => {
-  const cursor = cartCollection.find();
-  const result = await cursor.toArray();
-  res.send(result);
+    app.delete('/bookings/:id', async (req, res) => {
 
-})
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+
+      const result = await bookingCollection.deleteOne(query)
+      res.send(result)
+    })
 
 
+
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
