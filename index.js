@@ -40,6 +40,7 @@ async function run() {
     
     const roomCollection = client.db('Pearl_Ashore').collection('roomdata')
     const bookingCollection = client.db('Pearl_Ashore').collection('bookingdata')
+    const reviewCollection = client.db('Pearl_Ashore').collection('reviewdata')
 
 
     //get rooms data from   mdb
@@ -98,6 +99,45 @@ async function run() {
       const result = await bookingCollection.deleteOne(query)
       res.send(result)
     })
+
+
+// Update booking route
+app.put('/bookings/:id', async(req, res) => {
+
+  const id = req.params.id;
+  console.log(req.params.date);
+  const filter = {_id: new ObjectId(id)};
+  const options ={ upsert:true};
+  const updatedDtae =req.body;
+  console.log(updatedDtae);
+  const date ={
+    $set:{
+      date:updatedDtae.date,
+    }
+  };
+
+  await bookingCollection.updateOne(filter, date, options, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Error updating booking');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+
+// insert review data 
+
+
+ // booking data add to server side
+
+ app.post('/reviews' ,async(req,res) =>{
+  const review = req.body;
+  console.log(review);
+  const result = await reviewCollection.insertOne(review)
+  res.send(result);
+})
 
 
 
