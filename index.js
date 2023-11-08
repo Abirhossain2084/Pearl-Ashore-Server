@@ -52,7 +52,20 @@ const logger = (req,res,next) =>{
 const verifyToken =(req,res,next)=>{
   const token = req.cookies?.token;
   console.log('tokken in middlewire:::::::',token);
-  next();
+
+  // no token 
+  if(!token){
+    return res.status(401).send({message: 'unauthorized access'})
+  }
+  jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+    if(err){
+      return res.status(401).send({message:'unauthorized access'})
+    }
+    req.user =decoded;
+    next();
+    
+  })
+
 }
 
 
@@ -142,6 +155,15 @@ async function run() {
       console.log(req.query); 
 
       // console.log('boookingss cookiee',req.cookies);
+      console.log('userr:::::',req.user);
+
+      // check user is valid or not
+
+if(req.user.email !== req.query.email){
+  return res.status(403).send({message: 'forbidden access'})
+
+}
+
 
       let query = {};
 
