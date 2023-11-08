@@ -89,6 +89,26 @@ async function run() {
       res.send(result);
     })
 
+
+    
+//get specific data by id
+    app.get('/bookings/:id',async(req,res)=>{
+      const bookingId = req.params.id;
+  try {
+    const bookById = await bookingCollection.findOne({ _id: new ObjectId(bookingId) });
+    if (!bookById) {
+      // If room is not found, return a 404 status
+      return res.status(404).json({ error: 'revie not found' });
+    }
+    res.json(bookById);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+    })
+
+
+
   // delete specific data
 
     app.delete('/bookings/:id', async (req, res) => {
@@ -99,6 +119,8 @@ async function run() {
       const result = await bookingCollection.deleteOne(query)
       res.send(result)
     })
+
+
 
 
 // Update booking route
@@ -137,9 +159,32 @@ app.put('/bookings/:id', async(req, res) => {
   console.log(review);
   const result = await reviewCollection.insertOne(review)
   res.send(result);
+
+
+})
+ // booking data get from server side
+
+ app.get('/reviews' ,async(req,res) =>{
+  const cursor = reviewCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
 })
 
-
+//get rooms data by id from   mdb
+app.get('/reviews/:id', async (req, res) => {
+  const reviewid = req.params.id;
+  try {
+    const review = await reviewCollection.findOne({ _id: new ObjectId(reviewid) });
+    if (!review) {
+      // If room is not found, return a 404 status
+      return res.status(404).json({ error: 'revie not found' });
+    }
+    res.json(review);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
     
 
