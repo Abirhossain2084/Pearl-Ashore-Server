@@ -1,13 +1,22 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const app = express();
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
 //middleware
 
-app.use(cors());
+app.use(cors({
+  origin:[
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
+app.use(cookieParser());
 
 
 // Store the cart items in an array
@@ -32,6 +41,21 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+//middlewearse
+
+const logger = (req,res,next) =>{
+  console.log('logged Info:',req.method, req.url);
+  next()
+}
+
+const verifyToken =(req,res,next)=>{
+  const token = req.cookies?.token;
+  console.log('tokken in middlewire:::::::',token);
+  next();
+}
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -43,6 +67,38 @@ async function run() {
     const reviewCollection = client.db('Pearl_Ashore').collection('reviewdata')
 
 
+
+
+    //::::::auth related api jwt:::::::
+
+    app.post('/jwt',logger, async(req,res) => {
+      const user = req.body;
+      console.log('user for token',user);
+
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'})
+   
+      res.cookie('token',token ,{
+        httpOnly: true,
+        secure:true,
+        sameSite: 'none'
+      })
+      .send({success: true});
+   
+    })
+
+
+//logut jwt
+    app.post('/logout',async(req,res) =>{
+      const user = req.body;
+
+      console.log('logged out ', user);
+      res.clearCookie('token',{maxAge: 0}).send({success:true})
+    })
+
+
+
+
+    
     //get rooms data from   mdb
     app.get('/rooms', async (req, res) => {
       const cursor = roomCollection.find();
@@ -66,7 +122,10 @@ async function run() {
       }
     });
 
-    // booking data add to server side
+
+
+
+    //::::: booking data add to server side  :::::
 
     app.post('/bookings' ,async(req,res) =>{
       const booking = req.body;
@@ -75,10 +134,14 @@ async function run() {
       res.send(result);
     })
 
+
+    //use jwt
     //get specific data by 
 
-    app.get('/bookings',async(req,res)=>{
-      console.log(req.query);
+    app.get('/bookings', logger, verifyToken,async(req,res)=>{
+      console.log(req.query); 
+
+      // console.log('boookingss cookiee',req.cookies);
 
       let query = {};
 
@@ -109,7 +172,7 @@ async function run() {
 
 
 
-  // delete specific data
+  // delete specific data of booking
 
     app.delete('/bookings/:id', async (req, res) => {
 
@@ -149,10 +212,10 @@ app.put('/bookings/:id', async(req, res) => {
 });
 
 
-// insert review data 
+// ::::::: Review data  ::::::::
 
 
- // booking data add to server side
+ // add reviw data add to server side
 
  app.post('/reviews' ,async(req,res) =>{
   const review = req.body;
@@ -162,7 +225,7 @@ app.put('/bookings/:id', async(req, res) => {
 
 
 })
- // booking data get from server side
+ // review data get from server side
 
  app.get('/reviews' ,async(req,res) =>{
   const cursor = reviewCollection.find();
@@ -170,7 +233,8 @@ app.put('/bookings/:id', async(req, res) => {
       res.send(result);
 })
 
-//get rooms data by id from   mdb
+
+//get review data by id from   mdb
 app.get('/reviews/:id', async (req, res) => {
   const reviewid = req.params.id;
   try {
